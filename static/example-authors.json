@@ -1,0 +1,10 @@
+[
+    {
+        "name": "Author Name",
+        "githubUser": "author1Id"
+    },
+    {
+        "name": "Another Author Name",
+        "githubUser": "author2Id"
+    }
+]

@@ -1,0 +1,23 @@
+.missing {
+    background: #EF9A9A;
+    padding: 12px 24px;
+}
+
+.reviewed {
+    background: #A5D6A7;
+    padding: 12px 24px;
+}
+
+.requested {
+    background: #FFF59D;
+    padding: 12px 24px;
+}
+
+.unreviewed {
+    background: #90CAF9;
+    padding: 12px 24px;
+}
+
+.bg-darkgray {
+    background-color: #424242;
+}
