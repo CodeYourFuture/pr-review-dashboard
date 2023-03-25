@@ -87,7 +87,7 @@ function buildGridOuput(repos, authors, prs) {
 			let prForRepoAndAuthor = prs.find(pr => pr.user.login === author.githubUser && getRepo(pr) === repo);
 			return {
 				author: author.name,
-				repository: repo,
+				repository: repo.split('/')[1],
 				reviewRequested: doesLabelExist(prForRepoAndAuthor, 'review requested').toString(),
 				reviewed: doesLabelExist(prForRepoAndAuthor, 'reviewed').toString(),
 				link: getUrl(prForRepoAndAuthor)
