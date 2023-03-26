@@ -21,3 +21,20 @@
 .bg-darkgray {
     background-color: #424242;
 }
+
+.bg-success {
+    background-color: #66BB6A !important;
+}
+
+.bg-warning {
+    background-color: #FFEE58 !important;
+    color: black;
+}
+
+.bg-danger {
+    background-color: #EF5350 !important;
+}
+
+.bg-info {
+    background-color: #42A5F5 !important;
+}

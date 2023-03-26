@@ -6,6 +6,40 @@ import authors from "./authors.json" assert { type: "json" };
 
 const octokit = new Octokit();
 
+window.onload = () => onLoad();
+window.updateSearch = updateSearch;
+
+async function onLoad() {
+	const prs = await getPullRequests(repos, authors);
+	new Grid({
+		columns: [
+			{ name: "Author", attributes: colorBasedOnStatus, formatter: (_, row) => searchableCell(row.cells[0].data) },
+			{ name: "Repository", attributes: colorBasedOnStatus, formatter: (_, row) => searchableCell(row.cells[1].data) },
+			{ name: "Review Status", attributes: colorBasedOnStatus, formatter: reviewStatusCell },
+			{ name: "Link", attributes: colorBasedOnStatus }
+		],
+		data: buildGridOuput(repos, authors, prs),
+		sort: true,
+		search: true,
+		style: {
+			th: {
+				background: '#212529',
+				color: 'white'
+			}
+		}
+	}).render(document.getElementById('pull-requests'));
+}
+
+function updateSearch(value) {
+	let searchInput = document.querySelector('.gridjs-search-input');
+	searchInput.value = value;
+	searchInput.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
+}
+
+function searchableCell(value) {
+	return html(`<a href="javascript:updateSearch('${value}')"><img src='search.png' height='15px'/></a> ${value}`);
+}
+
 async function getPullRequests(repos, authors) {
 	const allPrs = [];
 	const reposForSearch = repos.map((repo) => `repo:${repo}`).join(" ");
@@ -33,38 +67,25 @@ async function wait(millis) {
 	});
 }
 
-getPullRequests(repos, authors).then(prs => {
-	new Grid({
-		columns: [
-			{ name: "Author", attributes: colorBasedOnStatus },
-			{ name: "Repository", attributes: colorBasedOnStatus },
-			{ name: "Review Requested", attributes: colorBasedOnStatus },
-			{ name: "Reviewed", attributes: colorBasedOnStatus },
-			{ name: "Link", attributes: colorBasedOnStatus }
-		],
-		data: buildGridOuput(repos, authors, prs),
-		sort: true,
-		search: true,
-		style: {
-			th: {
-				background: '#212529',
-				color: 'white'
-			}
-		}
-	}).render(document.getElementById('pull-requests'));
-});
+function reviewStatusCell(cell, row) {
+	const statusToClassMap = {
+		reviewed: 'bg-success',
+		'review requested': 'bg-warning',
+		'n/a': 'bg-secondary',
+		unreviewed: 'bg-info'
+	}
+	return html(`<span class="badge ${statusToClassMap[cell]}">${cell}</span>`);
+}
 
 function colorBasedOnStatus(cell, row) {
+	let statusToColorMap = {
+		reviewed: 'reviewed',
+		'review requested': 'requested',
+		'n/a': 'missing',
+		unreviewed: 'unreviewed'
+	}
 	if(row) {
-		if(row.cells[4].data === '<missing>') {
-			return { class: 'missing' };
-		} else if(row.cells[3].data === 'true') {
-			return { class: 'reviewed' };
-		} else if(row.cells[2].data === 'true') {
-			return { class: 'requested' };
-		} else {
-			return { class: 'unreviewed' };
-		}
+		return { class: statusToColorMap[row.cells[2].data] };
 	}
 }
 
@@ -81,6 +102,18 @@ function doesLabelExist(pr, label) {
 	return (pr ? pr.labels.some((l) => l.name === label) : false);
 }
 
+function getReviewStatus(pr) {
+	if(getUrl(pr) === '<missing>') {
+		return 'n/a';
+	} else if(doesLabelExist(pr, 'reviewed')) {
+		return 'reviewed';
+	} else if(doesLabelExist(pr, 'review requested')) {
+		return 'review requested';
+	} else {
+		return 'unreviewed';
+	}
+}
+
 function buildGridOuput(repos, authors, prs) {
 	return repos.flatMap(repo => 
 		authors.map(author => {
@@ -88,10 +121,11 @@ function buildGridOuput(repos, authors, prs) {
 			return {
 				author: author.name,
 				repository: repo.split('/')[1],
+				reviewStatus: getReviewStatus(prForRepoAndAuthor),
 				reviewRequested: doesLabelExist(prForRepoAndAuthor, 'review requested').toString(),
 				reviewed: doesLabelExist(prForRepoAndAuthor, 'reviewed').toString(),
 				link: getUrl(prForRepoAndAuthor)
 			};
 		})
-	).sort((a, b) => a.reviewRequested === 'true' && a.reviewed === 'false' ? -1 : 1);
+	).sort((a, b) => a.reviewStatus === 'review requested' ? -1 : 1);
 }
