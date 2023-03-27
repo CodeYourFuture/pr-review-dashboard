@@ -38,3 +38,14 @@
 .bg-info {
     background-color: #42A5F5 !important;
 }
+
+.search-container {
+    display: grid; 
+    grid-template-columns: 50px 700px auto 300px 100px;
+    grid-template-rows: auto;
+    grid-template-areas: 
+      "a b . c d";
+    column-gap: 5px;
+    height: 50px;
+    margin: 5px;
+}

@@ -11,12 +11,24 @@
     <nav class="navbar navbar-expand-lg bg-dark">
         <img style="padding-left: 1em;" src="cyf-logo.png" height="32">
         <span style="padding-left: 1em; color: white;">
-            <h3>PR Review Dashboard</h3>
+            <h3 style="margin-bottom: 0">PR Review Dashboard</h3>
         </span>
     </nav>
     <div class="container-fluid">
+        <div class="search-container">
+            <canvas id="statusChart"></canvas>
+            <div style="padding-top: 10px">
+                <h4 style="color: white; margin-bottom: 0;">
+                    <a style="color: #FFF59D" href="javascript:updateSearch('review requested')" id="requests-number"></a> / <a id="reviewed-number" href="javascript:updateSearch('reviewed')" style="color: #A5D6A7"></a> / <a id="unreviewed-number" href="javascript:updateSearch('unreviewed')" style="color: #90CAF9"></a> / <a id="missing-number" href="javascript:updateSearch('missing')" style="color: #EF9A9A"></a>
+                </h3>
+            </div>
+            <div></div>
+            <input class="form-control" id="search" value="" placeholder="Search" />
+            <button id="clearSearch" class="btn btn-light">Clear</button>
+        </div>
         <div id="pull-requests"></div>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="module" src="script.js"></script>
 </body>
 
