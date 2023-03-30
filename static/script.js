@@ -1,14 +1,18 @@
 import { Grid, html } from "https://unpkg.com/gridjs?module";
+import repos from "./repos.json" assert { type: "json" };
 
 window.onload = () => onLoad();
 window.updateSearch = updateSearch;
 
+Chart.defaults.font.size = 16;
+Chart.defaults.color = '#FFF';
+
 const reviewStatuses = {
-	requested: '#FFF59D',
-	unreviewed: '#90CAF9',
-	reviewed: '#A5D6A7',
-	missing: '#EF9A9A'
-}
+	requested: "#FFF59D",
+	unreviewed: "#90CAF9",
+	reviewed: "#A5D6A7",
+	missing: "#EF9A9A",
+};
 
 let gridData;
 let grid;
@@ -44,13 +48,11 @@ async function onLoad() {
 
 	document.getElementById("search").addEventListener("input", (e) => performSearch(e.target.value));
 	document.getElementById("clearSearch").addEventListener("click", (e) => {
-		document.getElementById("search").value = '';
+		document.getElementById("search").value = "";
 		performSearch("");
 	});
 
-	const ctx = document.getElementById("statusChart");
-
-	statusChart = new Chart(ctx, {
+	statusChart = new Chart(document.getElementById("statusChart"), {
 		type: "doughnut",
 		data: {
 			labels: Object.keys(reviewStatuses),
@@ -68,47 +70,86 @@ async function onLoad() {
 			responsive: true,
 			plugins: {
 				legend: {
-					display: false
+					display: false,
 				},
 				tooltip: {
-					enabled: false
-				}
-			}
+					enabled: false,
+				},
+			},
 		},
 	});
 
 	updateHeading(gridData);
+
+	let chartDataOverTime = getChartDataOverTime(gridData);
+	let datasets = Object.keys(chartDataOverTime).map((status) => ({
+		label: capitalise(status),
+		data: chartDataOverTime[status],
+		fill: false,
+		borderColor: reviewStatuses[status],
+		tension: 0.15,
+	}));
+
+	new Chart(document.getElementById("statusLineChartModal"), {
+		type: "line",
+		data: {
+			labels: repos.map(repo => repo.split('/')[1]),
+			datasets,
+		},
+	});
+}
+
+function getChartDataOverTime(gridData) {
+	const reviewStatuses = {
+		requested: [],
+		reviewed: [],
+		unreviewed: [],
+		missing: [],
+	};
+
+	Object.keys(reviewStatuses).forEach((status) => {
+		repos.forEach((repo) => {
+			reviewStatuses[status].push(
+				gridData.filter((row) => row.repository === repo.split("/")[1] && row.reviewStatus === status).length
+			);
+		});
+	});
+
+	return reviewStatuses;
 }
 
 function buildGridData(prs) {
-	return prs.map(pr => {
-		if(pr.link !== '-') {
+	return prs.map((pr) => {
+		if (pr.link !== "-") {
 			pr.link = html(`<a href='${pr.html_url}' target='_blank' rel='noopener noreferrer'>Link</a>`);
 		}
 		return pr;
-	})
+	});
+}
+
+function capitalise(str) {
+	return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 function updateHeading(gridData) {
-	Object.keys(reviewStatuses).forEach(status => {
-		const capitalisedStatus = status.charAt(0).toUpperCase() + status.slice(1);
-		document.getElementById(`${status}-number`).innerText = 
-			`${gridData.filter(row => row.reviewStatus === status).length} ${capitalisedStatus}`;
-	})
+	Object.keys(reviewStatuses).forEach((status) => {
+		document.getElementById(`${status}-number`).innerText = `${
+			gridData.filter((row) => row.reviewStatus === status).length
+		} ${capitalise(status)}`;
+	});
 }
 
 function getChartData(gridData) {
-	return Object.keys(reviewStatuses)
-		.map(status => gridData.filter(row => row.reviewStatus === status).length);
+	return Object.keys(reviewStatuses).map((status) => gridData.filter((row) => row.reviewStatus === status).length);
 }
 
 function performSearch(value) {
 	if (value) {
 		let filteredData = gridData.filter(
 			(row) =>
-				row.reviewStatus.toLowerCase() === value.toLowerCase()
-				|| row.author.toLowerCase().includes(value.toLowerCase())
-				|| row.repository.toLowerCase().includes(value.toLowerCase())
+				row.reviewStatus.toLowerCase() === value.toLowerCase() ||
+				row.author.toLowerCase().includes(value.toLowerCase()) ||
+				row.repository.toLowerCase().includes(value.toLowerCase())
 		);
 		grid.updateConfig({ data: filteredData }).forceRender();
 		statusChart.data.datasets[0].data = getChartData(filteredData);
@@ -133,7 +174,7 @@ function searchableCell(value) {
 }
 
 async function getPullRequests() {
-	const response = await fetch('prs');
+	const response = await fetch("prs");
 	return await response.json();
 }
 
@@ -144,7 +185,9 @@ function reviewStatusCell(cell, row) {
 		missing: "bg-danger",
 		unreviewed: "bg-info",
 	};
-	return html(`<a href="javascript:updateSearch('${cell}')"><img src='search.png' height='15px'/></a> <span class="badge ${statusToClassMap[cell]}">${cell}</span>`);
+	return html(
+		`<a href="javascript:updateSearch('${cell}')"><img src='search.png' height='15px'/></a> <span class="badge ${statusToClassMap[cell]}">${cell}</span>`
+	);
 }
 
 function colorBasedOnStatus(cell, row) {

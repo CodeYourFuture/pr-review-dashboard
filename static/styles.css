@@ -49,3 +49,7 @@
     height: 50px;
     margin: 5px;
 }
+
+.modal-xl {
+    --bs-modal-width: 1340px;
+}
