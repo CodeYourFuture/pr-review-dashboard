@@ -121,7 +121,7 @@ function getChartDataOverTime(gridData) {
 function buildGridData(prs) {
 	return prs.map((pr) => {
 		if (pr.link !== "-") {
-			pr.link = html(`<a href='${pr.html_url}' target='_blank' rel='noopener noreferrer'>Link</a>`);
+			pr.link = html(`<a href='${pr.link}' target='_blank' rel='noopener noreferrer'>Link</a>`);
 		}
 		return pr;
 	});
