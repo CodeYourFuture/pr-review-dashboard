@@ -1,5 +1,4 @@
 import { Grid, html } from "https://unpkg.com/gridjs?module";
-import repos from "./repos.json" assert { type: "json" };
 
 window.onload = () => onLoad();
 window.updateSearch = updateSearch;
@@ -93,7 +92,7 @@ async function onLoad() {
 	new Chart(document.getElementById("statusLineChartModal"), {
 		type: "line",
 		data: {
-			labels: repos.map(repo => repo.split('/')[1]),
+			labels: JSON.parse(localStorage.getItem('repos')).map(repo => repo.split('/')[1]),
 			datasets,
 		},
 	});
@@ -108,7 +107,7 @@ function getChartDataOverTime(gridData) {
 	};
 
 	Object.keys(reviewStatuses).forEach((status) => {
-		repos.forEach((repo) => {
+		JSON.parse(localStorage.getItem('repos')).forEach((repo) => {
 			reviewStatuses[status].push(
 				gridData.filter((row) => row.repository === repo.split("/")[1] && row.reviewStatus === status).length
 			);
