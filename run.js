@@ -1,34 +1,39 @@
 import express from "express";
 import { Octokit } from "octokit";
 import NodeCache from "node-cache";
-import repos from "./static/repos.json" assert { type: "json" };
-import authors from "./static/authors.json" assert { type: "json" };
+import { hasher } from 'node-object-hash';
+
+const hashSortCoerce = hasher({ sort: true, coerce: true });
 
 const octokit = new Octokit();
 const app = express();
 
 const githubCache = new NodeCache({ checkperiod: 1, deleteOnExpire: false });
-let populating = false;
-
 const reviewStatuses = ['requested', 'unreviewed', 'reviewed', 'missing'];
 
 app.use(express.static("static"));
-app.get("/prs", async (req, res) => {
-    res.json(githubCache.get('prs'));
+app.use(express.json());
+app.post("/prs", async (req, res) => {	
+	console.log(req.body.repos);
+
+	const rawPrs = await getCachedPullRequests(req.body.repos, req.body.authors);
+	const prs = buildGridOuput(req.body.repos, req.body.authors, rawPrs);
+    res.json(prs);
 });
 
-async function getPrsAndPopulateCache(repos, authors) {
-    if(!populating) {
-        populating = true;
-        console.log('Making GitHub request - ' + new Date().toLocaleString());
-        const rawPrs = await getPullRequests(repos, authors);
-        const prs = buildGridOuput(repos, authors, rawPrs);
-        githubCache.set('prs', prs, 60);
-        populating = false;
-    }
+async function getCachedPullRequests(repos, authors) {
+	const key = hashSortCoerce.hash([repos, authors]);
+	if(githubCache.has(key)) {
+		return githubCache.get(key);
+	} else {
+		const prs = await getPullRequests(repos, authors);
+		githubCache.set(key, prs, 60)
+		return prs;
+	}
 }
 
 async function getPullRequests(repos, authors) {
+	console.log('Making GitHub request - ' + new Date().toLocaleString());
 	const allPrs = [];
 	const reposForSearch = repos.map((repo) => `repo:${repo}`).join(" ");
 	const authorsForSearch = authors.map((author) => `author:${author.githubUser}`).join(" ");
@@ -44,7 +49,7 @@ async function getPullRequests(repos, authors) {
 		allPrs.push(...response.data.items);
 		page++;
 		wait(100);
-	} while (allPrs.length < response.data.total_count && page <= 5);
+	} while (allPrs.length < response.data.total_count && page <= 10);
 
 	return allPrs;
 }
@@ -96,13 +101,6 @@ function doesLabelExist(pr, label) {
 	return pr ? pr.labels.some((l) => l.name === label) : false;
 }
 
-githubCache.on('expired', async (key, value) => {
-    if(key === 'prs') {
-        await getPrsAndPopulateCache(repos, authors);
-    }
-});
-
 app.listen(3000, async () => {
-    await getPrsAndPopulateCache(repos, authors);
     console.log("Dashboard running on http://localhost:3000")
 });

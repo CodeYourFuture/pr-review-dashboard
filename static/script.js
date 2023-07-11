@@ -174,7 +174,23 @@ function searchableCell(value) {
 }
 
 async function getPullRequests() {
-	const response = await fetch("prs");
+	const repos = localStorage.getItem('repos');
+	const authors = localStorage.getItem('authors');
+
+	if(!repos || !authors) {
+		throw new Error('Please popluate repos and authors in localStorage');
+	}
+
+	const response = await fetch("prs", { 
+		method: 'POST',
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify({
+			repos: JSON.parse(repos),
+			authors: JSON.parse(authors),
+		})
+	});
 	return await response.json();
 }
 
